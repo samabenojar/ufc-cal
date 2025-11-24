@@ -27,7 +27,7 @@ jobs:
           ls -l UFC.ics UFC-PPV.ics
           
           # Use -f to force add if the file exists
-          git add -f UFC.ics UFC-PPV.ics 
+          git add -f . 
           
           # Only commit if there are actual changes
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
