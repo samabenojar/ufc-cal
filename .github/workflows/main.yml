@@ -30,14 +30,25 @@ jobs:
         working-directory: main
         run: |
           npm ci || npm install
-          # Ensure output goes to ../out (adjust if your script supports an output arg)
           npm start
-
-          # If your script writes UFC.ics to repo root (main/),
-          # move them to a staging folder for the ics branch
+      
+          echo "PWD=$(pwd)"
+          echo "Tree after build:"
+          ls -la
+          echo "Searching for .ics files..."
+          find . -type f -name "*.ics" -print || true
+      
+          # Stage output for the ics branch
           mkdir -p ../out
-          [ -f UFC.ics ] && mv UFC.ics ../out/
-          [ -f UFC-PPV.ics ] && mv UFC-PPV.ics ../out/
+          # Copy any ICS files we find (root or nested)
+          find . -type f -name "UFC*.ics" -exec cp -f {} ../out/ \;
+      
+          echo "Staged files:"
+          ls -la ../out
+      
+          # Hard fail if nothing was produced
+          test -n "$(ls -1 ../out 2>/dev/null)" || (echo "❌ Build did not produce any .ics files" && exit 1)
+
 
       # 4) Check out the publishing branch (ics) into a separate folder
       - name: Checkout ics (publish)
@@ -50,11 +61,10 @@ jobs:
       - name: Publish to ics branch
         run: |
           cp -f out/*.ics ics/ || true
-
           cd ics
           git config user.name "Sam Abenojar"
           git config user.email "samuel.abenojar@genesys.com"
-
           git add -A
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
           git push origin ics
+
