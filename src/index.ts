@@ -1,42 +1,56 @@
 import { getAllDetailedEvents } from "./scrape.js";
-import * as fs from "fs";
+import fs from "fs";
+import path from "path";
 import { createEvents, type DateArray, type EventAttributes } from "ics";
 
 /**
- * Extracts the details of recent and upcoming UFC events, then creates an
- * ICS file named "UFC.ics" in the current directory containing these events
+ * Build "UFC.ics" and "UFC-PPV.ics" calendar feeds.
+ * Runs automatically in GitHub Actions or locally with `npm start`.
  */
-async function createICS() {
+async function createICS(): Promise<void> {
   try {
+    console.log("🟢 Fetching UFC events...");
     const events = await getAllDetailedEvents();
-    if (!events?.length) throw new Error("No events retrieved");
+    if (!events?.length) throw new Error("No events retrieved.");
 
-    // Convert event details in the format in accordance with the ICS generator
+    console.log(`✅ Retrieved ${events.length} events.`);
+
+    // --- All events ---
     const formattedEvents = events.map((event) =>
       formatEventForCalendar(event, "UFC")
     );
+    console.log("📝 Generating UFC.ics...");
+    const { error: allErr, value: allVal } = createEvents(formattedEvents);
+    if (allErr) throw allErr;
 
-    console.log("\nDetailed events:");
-    console.log(formattedEvents);
+    const outDir = process.cwd();
+    const ufcPath = path.join(outDir, "UFC.ics");
+    fs.writeFileSync(ufcPath, allVal, "utf8");
+    console.log(`✅ Wrote ${ufcPath} (${Buffer.byteLength(allVal)} bytes)`);
 
-    // Create UFC.ics
-    const eventsData = createEvents(formattedEvents).value;
-    if (eventsData) fs.writeFileSync("UFC.ics", eventsData);
-
-    // Filter for PPV events only
-    const ppvEvents = events.filter((event) => /UFC \d+/.test(event.name));
-    const formattedPPVEvents = ppvEvents.map((event) =>
-      formatEventForCalendar(event, "UFC-PPV")
+    // --- PPV-only subset ---
+    const ppvEvents = events.filter((e) => /UFC\s+\d+/.test(e.name));
+    const formattedPPV = ppvEvents.map((e) =>
+      formatEventForCalendar(e, "UFC-PPV")
     );
+    console.log(`📝 Generating UFC-PPV.ics (${formattedPPV.length} events)...`);
+    const { error: ppvErr, value: ppvVal } = createEvents(formattedPPV);
+    if (ppvErr) throw ppvErr;
 
-    // Create UFC-PPV.ics
-    const ppvEventsData = createEvents(formattedPPVEvents).value;
-    if (ppvEventsData) fs.writeFileSync("UFC-PPV.ics", ppvEventsData);
+    const ppvPath = path.join(outDir, "UFC-PPV.ics");
+    fs.writeFileSync(ppvPath, ppvVal, "utf8");
+    console.log(`✅ Wrote ${ppvPath} (${Buffer.byteLength(ppvVal)} bytes)`);
+
+    console.log("🎯 ICS generation complete!");
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error generating ICS:", error);
+    process.exitCode = 1; // ensure GitHub Actions sees it as failure
   }
 }
 
+/**
+ * Convert a UFCEvent into an ICS EventAttributes object.
+ */
 function formatEventForCalendar(
   event: UFCEvent,
   calName = "UFC"
@@ -49,43 +63,40 @@ function formatEventForCalendar(
     date.getHours(),
     date.getMinutes(),
   ];
-  const duration: { hours: number } = { hours: 3 };
+  const duration = { hours: 3 };
   const title = event.name;
   let description = "";
 
-  // Distinguish between main card and prelims if this information has been
-  // announced by the UFC, otherwise list all fights without categorizing
-  if (event.fightCard.length) description = `${event.fightCard.join("\n")}\n`;
-  if (event.mainCard.length)
+  if (event.fightCard?.length)
+    description += `${event.fightCard.join("\n")}\n`;
+  if (event.mainCard?.length)
     description += `Main Card\n--------------------\n${event.mainCard.join(
       "\n"
     )}\n`;
-  if (event.prelims.length) {
+  if (event.prelims?.length) {
     description += "\nPrelims";
     if (event.prelimsTime) {
       const prelimsTime = new Date(parseInt(event.prelimsTime) * 1000);
-      const hoursAgo = (+date - +prelimsTime) / 1000 / 60 / 60;
+      const hoursAgo = (+date - +prelimsTime) / 3600000;
       if (hoursAgo > 0) description += ` (${hoursAgo} hrs before Main)`;
     }
     description += `\n--------------------\n${event.prelims.join("\n")}\n`;
   }
-  if (event.earlyPrelims.length) {
+  if (event.earlyPrelims?.length) {
     description += "\nEarly Prelims";
     if (event.earlyPrelimsTime) {
       const earlyPrelimsTime = new Date(
         parseInt(event.earlyPrelimsTime) * 1000
       );
-      const hoursAgo = (+date - +earlyPrelimsTime) / 1000 / 60 / 60;
+      const hoursAgo = (+date - +earlyPrelimsTime) / 3600000;
       if (hoursAgo > 0) description += ` (${hoursAgo} hrs before Main)`;
     }
     description += `\n--------------------\n${event.earlyPrelims.join("\n")}\n`;
   }
-  if (description.length) description += "\n";
-  description += `${event.url}`;
 
-  // Get current date and time to communicate to the user how up-to-date
-  // the event details are
-  const dateTimestr = new Date().toLocaleString("en-US", {
+  description += `\n${event.url}\n`;
+
+  const timestamp = new Date().toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -93,31 +104,40 @@ function formatEventForCalendar(
     timeZone: "America/Toronto",
     timeZoneName: "short",
   });
-  description += `\n\nAccurate as of ${dateTimestr}`;
-
-  const location = event.location;
-  const uid = event.url.href;
+  description += `\nAccurate as of ${timestamp}`;
 
   const calendarEvent: EventAttributes = {
     start,
     duration,
     title,
     description,
-    location,
-    uid,
+    location: event.location,
+    uid: event.url.href,
     calName,
-    // --- ADD THE ALARM HERE ---
     alarms: [
       {
-        action: 'display',
-        description: `${title} starting soon!`, // Customize the message
-        triggerBefore: { minutes: 30 }, // Trigger 30 minutes before the start time
+        action: "display",
+        description: `${title} starting soon!`,
+        triggerBefore: { minutes: 30 },
       },
     ],
-    // -------------------------
   };
 
   return calendarEvent;
+}
+
+// Type placeholder (your existing scrape.js already defines the structure)
+interface UFCEvent {
+  name: string;
+  date: string;
+  location: string;
+  url: URL;
+  fightCard: string[];
+  mainCard: string[];
+  prelims: string[];
+  earlyPrelims: string[];
+  prelimsTime?: string;
+  earlyPrelimsTime?: string;
 }
 
 createICS();
