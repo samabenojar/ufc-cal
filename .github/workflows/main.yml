@@ -15,23 +15,26 @@ jobs:
           ref: ics
           
       - name: Create UFC.ics
+        # Change to the src directory before running npm install/start
         run: |
+          cd src
           npm install
           npm start
-          
+        working-directory: . # Still run the commands relative to the root, but we changed the directory above
+
       - name: Push to repository
         run: |
           git config --global user.name "Clarence Chan"
           git config --global user.email "clarencechaan@icloud.com"
           
-          # 🚨 CRITICAL: FIND THE ACTUAL FILE PATH 🚨
+          # Now, search for files in the src/ directory
           echo "--- Searching for UFC.ics ---"
-          find . -name "UFC.ics"
+          find src -name "UFC.ics"
           echo "--- Searching for UFC-PPV.ics ---"
-          find . -name "UFC-PPV.ics"
+          find src -name "UFC-PPV.ics"
           
-          # Force add *all* changes recursively (This must run after find)
-          git add -f .
+          # Add the specific files we now expect to find in src/
+          git add -f src/UFC.ics src/UFC-PPV.ics
           
           # Only commit if there are actual changes
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
