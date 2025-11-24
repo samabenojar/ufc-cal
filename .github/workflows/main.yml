@@ -15,7 +15,6 @@ jobs:
           ref: ics
           
       - name: Create UFC.ics
-        # Revert to running from the root, as that is likely where the output path is defined.
         run: |
           npm install
           npm start
@@ -25,8 +24,9 @@ jobs:
           git config --global user.name "Clarence Chan"
           git config --global user.email "clarencechaan@icloud.com"
           
-          # Use -f and root path to force add the files.
-          # We use "|| true" to ignore the error if 'UFC.ics' is not found (which means no files were generated/changed).
+          # CRITICAL FIX: Use '|| true' on the git add command.
+          # If the files are not generated, this line will fail but the "|| true" ensures 
+          # the shell continues to the next command (git commit).
           git add -f UFC.ics UFC-PPV.ics || true
           
           # Only commit if there are actual changes
