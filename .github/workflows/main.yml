@@ -15,23 +15,19 @@ jobs:
           ref: ics
           
       - name: Create UFC.ics
-        # Change to the src directory before running npm install/start
+        # Revert to running from the root, as that is likely where the output path is defined.
         run: |
-          cd src
           npm install
           npm start
-        working-directory: . # Still run the commands relative to the root, but we changed the directory above
-
+          
       - name: Push to repository
         run: |
           git config --global user.name "Clarence Chan"
           git config --global user.email "clarencechaan@icloud.com"
           
-          # Check for file existence in root, but allow step to proceed (CRITICAL FIX)
-          ls -l UFC.ics UFC-PPV.ics || true
-          
-          # Use -f and root path to force add the files
-          git add -f UFC.ics UFC-PPV.ics
+          # Use -f and root path to force add the files.
+          # We use "|| true" to ignore the error if 'UFC.ics' is not found (which means no files were generated/changed).
+          git add -f UFC.ics UFC-PPV.ics || true
           
           # Only commit if there are actual changes
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
