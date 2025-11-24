@@ -25,11 +25,12 @@ jobs:
           git config --global user.email "clarencechaan@icloud.com"
           
           # 🚨 CRITICAL: FIND THE ACTUAL FILE PATH 🚨
-          # This command will search the entire repository for the .ics files.
+          echo "--- Searching for UFC.ics ---"
           find . -name "UFC.ics"
+          echo "--- Searching for UFC-PPV.ics ---"
           find . -name "UFC-PPV.ics"
           
-          # Use -f and '.' to force add all files recursively (We need to re-add || true to prevent failure)
+          # Force add *all* changes recursively (This must run after find)
           git add -f .
           
           # Only commit if there are actual changes
