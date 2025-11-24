@@ -27,14 +27,11 @@ jobs:
           git config --global user.name "Clarence Chan"
           git config --global user.email "clarencechaan@icloud.com"
           
-          # Now, search for files in the src/ directory
-          echo "--- Searching for UFC.ics ---"
-          find src -name "UFC.ics"
-          echo "--- Searching for UFC-PPV.ics ---"
-          find src -name "UFC-PPV.ics"
+          # Check for file existence in root, but allow step to proceed (CRITICAL FIX)
+          ls -l UFC.ics UFC-PPV.ics || true
           
-          # Add the specific files we now expect to find in src/
-          git add -f src/UFC.ics src/UFC-PPV.ics
+          # Use -f and root path to force add the files
+          git add -f UFC.ics UFC-PPV.ics
           
           # Only commit if there are actual changes
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
