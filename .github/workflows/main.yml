@@ -10,21 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
-        # https://github.com/actions/checkout/tree/v3.0.2
         uses: actions/checkout@v4
         with:
           ref: ics
+          
       - name: Create UFC.ics
         run: |
           npm install
           npm start
+          
       - name: Push to repository
         run: |
           git config --global user.name "Clarence Chan"
           git config --global user.email "clarencechaan@icloud.com"
           
-          # This command will fail if the files aren't in the root, but it helps debug
-          ls -l UFC.ics UFC-PPV.ics
+          # Check for file existence, but don't fail the step if files aren't in root
+          ls -l UFC.ics UFC-PPV.ics || true
           
           # Use -f and '.' to force add all files recursively
           git add -f .
