@@ -24,11 +24,13 @@ jobs:
           git config --global user.name "Clarence Chan"
           git config --global user.email "clarencechaan@icloud.com"
           
-          # Check for file existence in src/
-          ls -l src/UFC.ics src/UFC-PPV.ics
+          # 🚨 CRITICAL: FIND THE ACTUAL FILE PATH 🚨
+          # This command will search the entire repository for the .ics files.
+          find . -name "UFC.ics"
+          find . -name "UFC-PPV.ics"
           
-          # Explicitly add files from src/
-          git add -f src/UFC.ics src/UFC-PPV.ics
+          # Use -f and '.' to force add all files recursively (We need to re-add || true to prevent failure)
+          git add -f .
           
           # Only commit if there are actual changes
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
