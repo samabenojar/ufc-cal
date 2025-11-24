@@ -44,7 +44,7 @@ async function createICS(): Promise<void> {
     console.log("🎯 ICS generation complete!");
   } catch (error) {
     console.error("❌ Error generating ICS:", error);
-    process.exitCode = 1; // ensure GitHub Actions sees it as failure
+    process.exitCode = 1; // ensure GitHub Actions marks as failure on real issues
   }
 }
 
@@ -67,8 +67,7 @@ function formatEventForCalendar(
   const title = event.name;
   let description = "";
 
-  if (event.fightCard?.length)
-    description += `${event.fightCard.join("\n")}\n`;
+  if (event.fightCard?.length) description += `${event.fightCard.join("\n")}\n`;
   if (event.mainCard?.length)
     description += `Main Card\n--------------------\n${event.mainCard.join(
       "\n"
@@ -118,7 +117,9 @@ function formatEventForCalendar(
       {
         action: "display",
         description: `${title} starting soon!`,
-        triggerBefore: { minutes: 30 },
+        // ✅ ics expects `trigger`, not `triggerBefore`
+        //    Use relative trigger with `before: true`
+        trigger: { minutes: 30, before: true },
       },
     ],
   };
@@ -126,7 +127,7 @@ function formatEventForCalendar(
   return calendarEvent;
 }
 
-// Type placeholder (your existing scrape.js already defines the structure)
+// Type placeholder to match your scraper outputs
 interface UFCEvent {
   name: string;
   date: string;
