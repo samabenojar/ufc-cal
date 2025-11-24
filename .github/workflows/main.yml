@@ -31,6 +31,12 @@ jobs:
         run: |
           npm ci || npm install
           npm start
+  
+          echo "Exit code: $?"
+          echo "Listing directory structure after run:"
+          ls -R . | head -50
+          echo "Searching for UFC.ics..."
+          find . -type f -name "UFC*.ics" -print || true
       
           echo "PWD=$(pwd)"
           echo "Tree after build:"
