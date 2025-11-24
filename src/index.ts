@@ -98,7 +98,7 @@ function formatEventForCalendar(
   const location = event.location;
   const uid = event.url.href;
 
-  const calendarEvent = {
+  const calendarEvent: EventAttributes = {
     start,
     duration,
     title,
@@ -106,6 +106,15 @@ function formatEventForCalendar(
     location,
     uid,
     calName,
+    // --- ADD THE ALARM HERE ---
+    alarms: [
+      {
+        action: 'display',
+        description: `${title} starting soon!`, // Customize the message
+        triggerBefore: { minutes: 30 }, // Trigger 30 minutes before the start time
+      },
+    ],
+    // -------------------------
   };
 
   return calendarEvent;
