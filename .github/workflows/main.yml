@@ -20,12 +20,15 @@ jobs:
           npm start
       - name: Push to repository
         run: |
-          git config --global user.name "Your Name" # Use your actual name
-          git config --global user.email "your@email.com" # Use your actual email
+          git config --global user.name "Clarence Chan"
+          git config --global user.email "clarencechaan@icloud.com" # Ensure your email is also present
           
-          # Check if files exist before trying to add them (optional, but good practice)
+          # --- ADD THIS LINE TO CHECK IF FILES WERE CREATED ---
           ls -l UFC.ics UFC-PPV.ics
           
-          git add UFC.ics UFC-PPV.ics
+          # Use -f to force add if the file exists
+          git add -f UFC.ics UFC-PPV.ics 
+          
+          # Only commit if there are actual changes
           git commit -m "Update UFC.ics and UFC-PPV.ics" || echo "No changes to commit"
           git push -u origin ics
